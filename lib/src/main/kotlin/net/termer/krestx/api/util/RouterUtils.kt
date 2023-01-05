@@ -20,11 +20,12 @@ import kotlinx.coroutines.launch
 typealias SuspendRequestHandler = SuspendHandler<RoutingContext, Unit>
 
 /**
- * Generates a [Handler]<[RoutingContext]> from a suspending function
- * @param requestHandler The request handler suspending function
+ * Wraps a [SuspendHandler] in a [Handler]<[RoutingContext]>
+ * @param requestHandler The [SuspendHandler] to wrap
  * @return The generated [Handler]
+ * @since 1.1.0
  */
-private fun genHandler(requestHandler: SuspendRequestHandler): Handler<RoutingContext> = Handler<RoutingContext> { ctx ->
+fun wrapHandler(requestHandler: SuspendRequestHandler): Handler<RoutingContext> = Handler<RoutingContext> { ctx ->
 	GlobalScope.launch(ctx.vertx().dispatcher()) {
 		try {
 			requestHandler.handle(ctx)
@@ -41,7 +42,7 @@ private fun genHandler(requestHandler: SuspendRequestHandler): Handler<RoutingCo
  * @since 1.0.0
  */
 fun Route.suspendHandler(requestHandler: SuspendRequestHandler): Route {
-	handler(genHandler(requestHandler))
+	handler(wrapHandler(requestHandler))
 	return this
 }
 
@@ -56,6 +57,6 @@ fun Route.suspendHandler(requestHandler: SuspendRequestHandler): Route {
  * @since 1.0.0
  */
 fun Router.suspendErrorHandler(statusCode: Int, errorHandler: SuspendRequestHandler): Router {
-	errorHandler(statusCode, genHandler(errorHandler))
+	errorHandler(statusCode, wrapHandler(errorHandler))
 	return this
 }
