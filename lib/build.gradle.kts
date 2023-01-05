@@ -24,7 +24,7 @@ version = Project.version
 description = Project.description
 
 plugins {
-    val ktVer = "1.7.10" // Versions.kotlin cannot be accessed in this scope
+    val ktVer = "1.7.20" // Versions.kotlin cannot be accessed in this scope
 
     kotlin("jvm") version ktVer
 
