@@ -11,11 +11,6 @@ import io.vertx.kotlin.coroutines.await
 import net.termer.krestx.api.handler.SuspendHandler
 
 /**
- * The default API error HTTP status code
- */
-private const val DEFAULT_API_ERROR_STATUS = 500
-
-/**
  * An API request handler.
  * Alias to [SuspendHandler]<[RoutingContext], [ApiResponse]>.
  * @since 1.0.0
@@ -103,7 +98,7 @@ data class ApiErrorResponse(
 	 * The status code to send along with the response (defaults to 500)
 	 * @since 1.0.0
 	 */
-	val statusCode: Int = DEFAULT_API_ERROR_STATUS
+	val statusCode: Int = 500
 ) : ApiResponse {
 	init {
 		if (errors.isEmpty())
@@ -152,11 +147,11 @@ inline fun apiSuccess(data: JsonObject = JsonObject()) = ApiSuccessResponse(data
  * @param name The computer-readable error name (e.g. "internal_error")
  * @param message The human-readable error message (e.g. "Internal error")
  * @param data Any additional data to include with the error (optional)
- * @param statusCode The status code to send along with the error response
+ * @param statusCode The status code to send along with the error response (defaults to 500)
  * @return The error API response
  * @since 1.0.0
  */
-inline fun apiError(name: String, message: String, data: JsonObject? = null, statusCode: Int = DEFAULT_API_ERROR_STATUS) = ApiErrorResponse(
+inline fun apiError(name: String, message: String, data: JsonObject? = null, statusCode: Int = 500) = ApiErrorResponse(
 	errors = arrayOf(ApiError(name, message, data)),
 	statusCode = statusCode
 )
@@ -165,11 +160,11 @@ inline fun apiError(name: String, message: String, data: JsonObject? = null, sta
  * Returns an error API response with multiple errors.
  * To return only one error, use [apiError].
  * @param errors The errors to send
- * @param statusCode The status code to send along with the error response
+ * @param statusCode The status code to send along with the error response (defaults to 500)
  * @return The error API response
  * @since 1.0.0
  */
-inline fun apiErrors(errors: Array<ApiError>, statusCode: Int = DEFAULT_API_ERROR_STATUS) = ApiErrorResponse(
+inline fun apiErrors(errors: Array<ApiError>, statusCode: Int = 500) = ApiErrorResponse(
 	errors = errors,
 	statusCode = statusCode
 )
