@@ -4,7 +4,7 @@ class Project {
     companion object {
         const val name = "krestx-api"
         const val group = "net.termer.krestx"
-        const val version = "1.0.0"
+        const val version = "1.1.0"
         const val repo = "github.com/termermc/krestx-api"
         const val description = "An opinionated Vert.x REST library built with Kotlin and coroutines. API portion."
     }
@@ -13,7 +13,7 @@ class Project {
 class Versions {
     companion object {
         const val jvm = "8"
-        const val kotlin = "1.7.10"
+        const val kotlin = "1.7.20"
         const val vertx = "4.3.3"
         const val jupiter = "5.9.0"
     }
@@ -62,7 +62,7 @@ dependencies {
 
     // Specific libraries required for testing
     testImplementation("io.vertx:vertx-web-client:${Versions.vertx}")
-    testImplementation("com.fasterxml.jackson.core:jackson-databind:2.13.3")
+    testImplementation("com.fasterxml.jackson.core:jackson-databind:2.14.0")
 
     // Docs
     dokkaHtmlPlugin("org.jetbrains.dokka:kotlin-as-java-plugin:${Versions.kotlin}")
