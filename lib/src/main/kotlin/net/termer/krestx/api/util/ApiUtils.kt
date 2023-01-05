@@ -144,7 +144,7 @@ data class ApiErrorResponse(
  * @return The successful API response
  * @since 1.1.0
  */
-fun apiSuccess(data: JsonObject = JsonObject()) = ApiSuccessResponse(data)
+inline fun apiSuccess(data: JsonObject = JsonObject()) = ApiSuccessResponse(data)
 
 /**
  * Returns an error API response.
@@ -156,7 +156,7 @@ fun apiSuccess(data: JsonObject = JsonObject()) = ApiSuccessResponse(data)
  * @return The error API response
  * @since 1.0.0
  */
-fun apiError(name: String, message: String, data: JsonObject? = null, statusCode: Int = DEFAULT_API_ERROR_STATUS) = ApiErrorResponse(
+inline fun apiError(name: String, message: String, data: JsonObject? = null, statusCode: Int = DEFAULT_API_ERROR_STATUS) = ApiErrorResponse(
 	errors = arrayOf(ApiError(name, message, data)),
 	statusCode = statusCode
 )
@@ -169,7 +169,7 @@ fun apiError(name: String, message: String, data: JsonObject? = null, statusCode
  * @return The error API response
  * @since 1.0.0
  */
-fun apiErrors(errors: Array<ApiError>, statusCode: Int = DEFAULT_API_ERROR_STATUS) = ApiErrorResponse(
+inline fun apiErrors(errors: Array<ApiError>, statusCode: Int = DEFAULT_API_ERROR_STATUS) = ApiErrorResponse(
 	errors = errors,
 	statusCode = statusCode
 )
