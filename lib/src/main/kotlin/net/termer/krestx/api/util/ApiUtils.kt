@@ -20,7 +20,7 @@ private const val DEFAULT_API_ERROR_STATUS = 500
  * Alias to [SuspendHandler]<[RoutingContext], [ApiResponse]>.
  * @since 1.0.0
  */
-typealias ApiRequestHandler = SuspendHandler<RoutingContext, ApiResponse?>
+typealias ApiRequestHandler = SuspendHandler<RoutingContext, ApiResponse>
 
 /**
  * An API error
