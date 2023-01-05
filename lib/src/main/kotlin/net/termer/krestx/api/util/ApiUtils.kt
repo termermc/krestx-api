@@ -61,13 +61,13 @@ data class ApiError(
 
 /**
  * An API response
- * @since 1.0.0
+ * @since 1.1.0
  */
 sealed interface ApiResponse {
 	/**
 	 * Returns a JSON representation of the response
 	 * @return A JSON representation of the response
-	 * @since 1.0.0
+	 * @since 1.1.0
 	 */
 	fun toJson(): JsonObject
 }
@@ -81,19 +81,15 @@ data class ApiSuccessResponse(
 	 * Any data to include with the response
 	 * @since 1.0.0
 	 */
-	val data: JsonObject? = null
-): ApiResponse {
-	override fun toJson() = json {
-		obj(
-			"success" to true,
-			"data" to data
-		)
-	}
+	val data: JsonObject = JsonObject()
+) : ApiResponse {
+	override fun toJson() = data
 }
 
 /**
  * An error API response.
- * May contain zero or more error objects.
+ * Should contain at least one or more error objects.
+ * @throws IllegalArgumentException If 0 errors were provided
  * @since 1.0.0
  */
 data class ApiErrorResponse(
@@ -108,18 +104,21 @@ data class ApiErrorResponse(
 	 * @since 1.0.0
 	 */
 	val statusCode: Int = DEFAULT_API_ERROR_STATUS
-): ApiResponse {
-	override fun toJson() = json {
-		obj(
-			"success" to false,
-			"statusCode" to statusCode,
-			"errors" to errors.map { it.toJson() }
-		)
+) : ApiResponse {
+	init {
+		if (errors.isEmpty())
+			throw IllegalArgumentException("At least one ApiError must be provided")
 	}
+
+	override fun toJson() = jsonObjectOf(
+		"statusCode" to statusCode,
+		"errors" to errors.map { it.toJson() }
+	)
 
 	override fun equals(other: Any?): Boolean {
 		if(this === other)
 			return true
+
 		if(javaClass != other?.javaClass) return false
 
 		other as ApiErrorResponse
@@ -143,9 +142,9 @@ data class ApiErrorResponse(
  * Returns a successful API response
  * @param data Any additional data to include in the response (optional)
  * @return The successful API response
- * @since 1.0.0
+ * @since 1.1.0
  */
-fun apiSuccess(data: JsonObject? = null) = ApiSuccessResponse(data = data)
+fun apiSuccess(data: JsonObject = JsonObject()) = ApiSuccessResponse(data)
 
 /**
  * Returns an error API response.
@@ -165,7 +164,7 @@ fun apiError(name: String, message: String, data: JsonObject? = null, statusCode
 /**
  * Returns an error API response with multiple errors.
  * To return only one error, use [apiError].
- * @param errors The errrors to send
+ * @param errors The errors to send
  * @param statusCode The status code to send along with the error response
  * @return The error API response
  * @since 1.0.0
@@ -183,7 +182,7 @@ fun apiErrors(errors: Array<ApiError>, statusCode: Int = DEFAULT_API_ERROR_STATU
 suspend fun RoutingContext.send(res: ApiResponse) {
 	response().putHeader("content-type", "application/json; charset=UTF-8")
 
-	when(res) {
+	when (res) {
 		is ApiSuccessResponse -> response()
 			.setStatusCode(200)
 			.end(res.toJson().toString())
@@ -205,7 +204,7 @@ fun Route.apiHandler(requestHandler: ApiRequestHandler) = suspendHandler { ctx -
 	val res = requestHandler.handle(ctx)
 
 	// If a response is returned, send it
-	if(res !== null)
+	if (res !== null)
 		ctx.send(res)
 }
 
@@ -223,7 +222,7 @@ fun Router.apiErrorHandler(statusCode: Int, errorHandler: ApiRequestHandler) = s
 	val res = errorHandler.handle(ctx)
 
 	// If a response is returned, send it
-	if(res !== null)
+	if (res !== null)
 		ctx.send(res)
 }
 
@@ -246,12 +245,14 @@ fun Router.mountApiRouter(version: String, router: Router): Router {
  * @since 1.0.0
  */
 fun Router.defaultApiInfoHandler(currentApiVersion: String, supportedApiVersions: Array<String>) = this.apply {
-	get("/api").apiHandler { apiSuccess(
-		jsonObjectOf(
-			"currentVersion" to currentApiVersion,
-			"supportedVersions" to supportedApiVersions
+	get("/api").apiHandler {
+		apiSuccess(
+			jsonObjectOf(
+				"currentVersion" to currentApiVersion,
+				"supportedVersions" to supportedApiVersions
+			)
 		)
-	) }
+	}
 }
 
 /**
@@ -260,11 +261,13 @@ fun Router.defaultApiInfoHandler(currentApiVersion: String, supportedApiVersions
  * @return This, to be used fluently
  * @since 1.0.0
  */
-fun Router.defaultApiNotFoundHandler() = apiErrorHandler(404) { apiError(
-	name = "not_found",
-	message = "Not found",
-	statusCode = 404
-) }
+fun Router.defaultApiNotFoundHandler() = apiErrorHandler(404) {
+		apiError(
+		name = "not_found",
+		message = "Not found",
+		statusCode = 404
+	)
+}
 
 /**
  * Attaches a default API Unauthorized (403) error handler.
@@ -272,11 +275,13 @@ fun Router.defaultApiNotFoundHandler() = apiErrorHandler(404) { apiError(
  * @return This, to be used fluently
  * @since 1.0.0
  */
-fun Router.defaultApiUnauthorizedHandler() = apiErrorHandler(403) { apiError(
-	name = "unauthorized",
-	message = "Unauthorized",
-	statusCode = 403
-) }
+fun Router.defaultApiUnauthorizedHandler() = apiErrorHandler(403) {
+	apiError(
+		name = "unauthorized",
+		message = "Unauthorized",
+		statusCode = 403
+	)
+}
 
 /**
  * Attaches a default API Internal Error (500) error handler.
@@ -286,8 +291,10 @@ fun Router.defaultApiUnauthorizedHandler() = apiErrorHandler(403) { apiError(
  * @return This, to be used fluently
  * @since 1.0.0
  */
-fun Router.defaultApiInternalErrorHandler() = apiErrorHandler(500) { apiError(
-	name = "internal_error",
-	message = "Internal error",
-	statusCode = 500
-) }
+fun Router.defaultApiInternalErrorHandler() = apiErrorHandler(500) {
+	apiError(
+		name = "internal_error",
+		message = "Internal error",
+		statusCode = 500
+	)
+}
