@@ -1,12 +1,8 @@
 package net.termer.krestx.api.util
 
 import io.vertx.core.json.JsonObject
-import io.vertx.ext.web.Route
-import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
-import io.vertx.kotlin.core.json.json
 import io.vertx.kotlin.core.json.jsonObjectOf
-import io.vertx.kotlin.core.json.obj
 import io.vertx.kotlin.coroutines.await
 import net.termer.krestx.api.handler.SuspendHandler
 
@@ -45,13 +41,11 @@ data class ApiError(
 	 * @return A JSON representation of the error
 	 * @since 1.0.0
 	 */
-	fun toJson() = json {
-		obj(
-			"name" to name,
-			"message" to message,
-			"data" to data
-		)
-	}
+	fun toJson() = jsonObjectOf(
+		"name" to name,
+		"message" to message,
+		"data" to data
+	)
 }
 
 /**
@@ -95,7 +89,8 @@ data class ApiErrorResponse(
 	val errors: Array<ApiError>,
 
 	/**
-	 * The status code to send along with the response (defaults to 500)
+	 * The HTTP status code to send along with the response (defaults to 500).
+	 * Not serialized in [toJson].
 	 * @since 1.0.0
 	 */
 	val statusCode: Int = 500
@@ -106,7 +101,6 @@ data class ApiErrorResponse(
 	}
 
 	override fun toJson() = jsonObjectOf(
-		"statusCode" to statusCode,
 		"errors" to errors.map { it.toJson() }
 	)
 
@@ -130,6 +124,26 @@ data class ApiErrorResponse(
 		var result = statusCode
 		result = 31*result+errors.contentHashCode()
 		return result
+	}
+}
+
+/**
+ * Sends an API response
+ * @param res The API response
+ * @since 1.0.0
+ */
+suspend fun RoutingContext.send(res: ApiResponse) {
+	response().putHeader("content-type", "application/json; charset=UTF-8")
+
+	when (res) {
+		is ApiSuccessResponse -> response()
+			.setStatusCode(200)
+			.end(res.toJson().toString())
+			.await()
+		is ApiErrorResponse -> response()
+			.setStatusCode(res.statusCode)
+			.end(res.toJson().toString())
+			.await()
 	}
 }
 
@@ -170,126 +184,69 @@ inline fun apiErrors(errors: Array<ApiError>, statusCode: Int = 500) = ApiErrorR
 )
 
 /**
- * Sends an API response
- * @param res The API response
- * @since 1.0.0
- */
-suspend fun RoutingContext.send(res: ApiResponse) {
-	response().putHeader("content-type", "application/json; charset=UTF-8")
-
-	when (res) {
-		is ApiSuccessResponse -> response()
-			.setStatusCode(200)
-			.end(res.toJson().toString())
-			.await()
-		is ApiErrorResponse -> response()
-			.setStatusCode(res.statusCode)
-			.end(res.toJson().toString())
-			.await()
-	}
-}
-
-/**
- * Append an API request handler to the route handlers list
- * @param requestHandler The API request handler
- * @return This, to be used fluently
- * @since 1.0.0
- */
-fun Route.apiHandler(requestHandler: ApiRequestHandler) = suspendHandler { ctx ->
-	val res = requestHandler.handle(ctx)
-
-	// If a response is returned, send it
-	if (res !== null)
-		ctx.send(res)
-}
-
-/**
- * Specify an API handler to handle an error for a particular status code.
- * You can use to manage general errors too using status code 500.
- * The handler will be called when the context fails and other failure handlers didn't write the reply or when an exception is thrown inside a handler.
- * You must not use [RoutingContext.next] inside the error handler This does not affect the normal failure routing logic.
- * @param statusCode The status code to handle
- * @param errorHandler The API error handler
- * @return This, to be used fluently
- * @since 1.0.0
- */
-fun Router.apiErrorHandler(statusCode: Int, errorHandler: ApiRequestHandler) = suspendErrorHandler(statusCode) { ctx ->
-	val res = errorHandler.handle(ctx)
-
-	// If a response is returned, send it
-	if (res !== null)
-		ctx.send(res)
-}
-
-/**
- * Mounts an API router for the API with the specified version
- * @param version The API version (e.g. "v1")
- * @param router The router to mount
- * @return This, to be used fluently
- * @since 1.0.0
- */
-fun Router.mountApiRouter(version: String, router: Router): Router {
-	route("/api/$version/*").subRouter(router)
-	return this
-}
-
-/**
- * Attaches a default API info handler at "/api".
+ * Returns a default API info success API response.
  * Returns the current API version and a list of supported versions.
- * @return This, to be used fluently
- * @since 1.0.0
+ * @return A default API info success API response.
+ * @since 1.1.1
  */
-fun Router.defaultApiInfoHandler(currentApiVersion: String, supportedApiVersions: Array<String>) = this.apply {
-	get("/api").apiHandler {
-		apiSuccess(
-			jsonObjectOf(
-				"currentVersion" to currentApiVersion,
-				"supportedVersions" to supportedApiVersions
-			)
-		)
-	}
-}
+inline fun apiInfoSuccess(currentApiVersion: String, supportedApiVersions: Array<String>) = apiSuccess(
+	jsonObjectOf(
+		"currentVersion" to currentApiVersion,
+		"supportedVersions" to supportedApiVersions
+	)
+)
 
 /**
- * Attaches a default API Not Found (404) error handler.
- * Returns an API error with the name "not_found" and message "Not found".
- * @return This, to be used fluently
- * @since 1.0.0
+ * Returns a "Not found" error API response
+ * @return A "Not found" error API response
+ * @since 1.1.1
  */
-fun Router.defaultApiNotFoundHandler() = apiErrorHandler(404) {
-		apiError(
-		name = "not_found",
-		message = "Not found",
-		statusCode = 404
-	)
-}
+inline fun apiNotFoundError() = apiError(
+	name = "not_found",
+	message = "Not found",
+	statusCode = 404
+)
 
 /**
- * Attaches a default API Unauthorized (403) error handler.
- * Returns an API error with the name "unauthorized" and message "Unauthorized".
- * @return This, to be used fluently
- * @since 1.0.0
+ * Returns an "Unauthorized" error API response
+ * @return An "Unauthorized" error API response
+ * @since 1.1.1
  */
-fun Router.defaultApiUnauthorizedHandler() = apiErrorHandler(403) {
-	apiError(
-		name = "unauthorized",
-		message = "Unauthorized",
-		statusCode = 403
-	)
-}
+inline fun apiUnauthorizedError() = apiError(
+	name = "unauthorized",
+	message = "Unauthorized",
+	statusCode = 403
+)
 
 /**
- * Attaches a default API Internal Error (500) error handler.
- * Returns an API error with the name "internal_error" and message "Internal error".
- * The handler does not log anything, so if you want to log errors or handle them in another way,
- * either place a 500 error handler for this and pass the error when it's done, or don't use this method at all.
- * @return This, to be used fluently
- * @since 1.0.0
+ * Returns a "Method not allowed" error API response
+ * @return A "Method not allowed" error API response
+ * @since 1.1.1
  */
-fun Router.defaultApiInternalErrorHandler() = apiErrorHandler(500) {
-	apiError(
-		name = "internal_error",
-		message = "Internal error",
-		statusCode = 500
-	)
-}
+inline fun apiMethodNotAllowedError() = apiError(
+	name = "method_not_allowed",
+	message = "Method not allowed",
+	statusCode = 405
+)
+
+/**
+ * Returns an "Internal error" error API response
+ * @return An "Internal error" error API response
+ * @since 1.1.1
+ */
+inline fun apiInternalError() = apiError(
+	name = "internal_error",
+	message = "Internal error",
+	statusCode = 500
+)
+
+/**
+ * Returns a "Bad request" error API response
+ * @return A "Bad request" error API response
+ * @since 1.1.1
+ */
+fun apiBadRequestError() = apiError(
+	name = "bad_request",
+	message = "Bad request",
+	statusCode = 400
+)
