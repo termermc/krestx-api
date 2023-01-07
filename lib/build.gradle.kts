@@ -124,53 +124,55 @@ tasks.dokkaHtml {
 }
 
 // Only enable OSSRH deployment if necessary credentials are present
-if (properties.containsKey("nexusUsername") && properties.containsKey("nexusPassword")) {
-    publishing {
-        publications {
-            create("mavenJava", MavenPublication::class) {
-                groupId = Project.group
-                artifactId = Project.name
-                version = Project.version
+val ossrhPublishEnabled = properties.containsKey("nexusUsername") && properties.containsKey("nexusPassword")
 
-                from(components["java"])
-                versionMapping {
-                    usage("java-api") {
-                        fromResolutionOf("runtimeClasspath")
-                    }
-                    usage("java-runtime") {
-                        fromResolutionResult()
+publishing {
+    publications {
+        create("mavenJava", MavenPublication::class) {
+            groupId = Project.group
+            artifactId = Project.name
+            version = Project.version
+
+            from(components["java"])
+            versionMapping {
+                usage("java-api") {
+                    fromResolutionOf("runtimeClasspath")
+                }
+                usage("java-runtime") {
+                    fromResolutionResult()
+                }
+            }
+
+            pom {
+                name.set(Project.name)
+                description.set(Project.description)
+                url.set("https://${Project.repo}")
+
+                licenses {
+                    license {
+                        name.set("MIT License")
+                        url.set("https://opensource.org/licenses/MIT")
                     }
                 }
 
-                pom {
-                    name.set(Project.name)
-                    description.set(Project.description)
+                developers {
+                    developer {
+                        id.set("termer")
+                        name.set("Michael Termer")
+                        email.set("termer@termer.net")
+                    }
+                }
+
+                scm {
+                    connection.set("scm:git:git://${Project.repo}.git")
+                    developerConnection.set("scm:git:ssh://${Project.repo}.git")
                     url.set("https://${Project.repo}")
-
-                    licenses {
-                        license {
-                            name.set("MIT License")
-                            url.set("https://opensource.org/licenses/MIT")
-                        }
-                    }
-
-                    developers {
-                        developer {
-                            id.set("termer")
-                            name.set("Michael Termer")
-                            email.set("termer@termer.net")
-                        }
-                    }
-
-                    scm {
-                        connection.set("scm:git:git://${Project.repo}.git")
-                        developerConnection.set("scm:git:ssh://${Project.repo}.git")
-                        url.set("https://${Project.repo}")
-                    }
                 }
             }
         }
+    }
 
+    if (ossrhPublishEnabled) {
         repositories {
             maven {
                 name = "OSSRH"
@@ -182,10 +184,12 @@ if (properties.containsKey("nexusUsername") && properties.containsKey("nexusPass
             }
         }
     }
+}
 
+if (ossrhPublishEnabled) {
     signing {
         sign(publishing.publications["mavenJava"])
     }
 } else {
-    System.err.println("WARNING: Missing \"nexusUsername\" and/or \"nexusPassword\" properties; publishing is disabled")
+    System.err.println("WARNING: Missing \"nexusUsername\" and/or \"nexusPassword\" properties; publishing to OSSRH is disabled")
 }
