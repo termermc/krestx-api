@@ -169,13 +169,16 @@ publishing {
         }
     }
 
-    repositories {
-        maven {
-            name = "OSSRH"
-            url = URI.create("https://oss.sonatype.org/service/local/staging/deploy/maven2/")
-            credentials {
-                username = properties["nexusUsername"] as String?
-                password = properties["nexusPassword"] as String?
+    // Only enable OSSRH deployment if necessary credentials are present
+    if (properties.containsKey("nexusUsername") && properties.containsKey("nexusPassword")) {
+        repositories {
+            maven {
+                name = "OSSRH"
+                url = URI.create("https://oss.sonatype.org/service/local/staging/deploy/maven2/")
+                credentials {
+                    username = properties["nexusUsername"] as String?
+                    password = properties["nexusPassword"] as String?
+                }
             }
         }
     }
