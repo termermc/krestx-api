@@ -103,10 +103,11 @@ fun Router.mountApiRouter(version: String, router: Router): Router {
  * @return This, to be used fluently
  * @since 1.0.0
  */
-fun Router.defaultApiInfoHandler(currentApiVersion: String, supportedApiVersions: Array<String>) = this.apply {
+fun Router.defaultApiInfoHandler(currentApiVersion: String, supportedApiVersions: Array<String>): Router {
 	get("/api").apiHandler {
 		apiInfoSuccess(currentApiVersion, supportedApiVersions)
 	}
+	return this
 }
 
 /**
@@ -154,11 +155,13 @@ fun Router.defaultBadRequestHandler() = apiErrorHandler(400) {
  * Returns an API error with the name "internal_error" and message "Internal error".
  * The handler does not log anything, so if you want to log errors or handle them in another way, pass a handler for [errorHandler].
  * Keep in mind that it is your responsibility to catch any exceptions that may occur inside your error handler.
+ * You must also be aware that async code inside of [errorHandler] will not block the API error response.
+ * You must expect that your async code will be run after the response is already written.
  * @param errorHandler The error handler to execute before returning the default response, or null for none (defaults to null)
  * @return This, to be used fluently
- * @since 1.0.0
+ * @since 1.1.1
  */
-fun Router.defaultApiInternalErrorHandler(errorHandler: SuspendHandler<RoutingContext, Unit>? = null) = apiErrorHandler(500) {
+fun Router.defaultApiInternalErrorHandler(errorHandler: Handler<RoutingContext>? = null) = apiErrorHandler(500) {
 	if (errorHandler !== null)
 		errorHandler.handle(it)
 
