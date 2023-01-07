@@ -20,16 +20,32 @@ import kotlinx.coroutines.launch
 typealias SuspendRequestHandler = SuspendHandler<RoutingContext, Unit>
 
 /**
- * Wraps a [SuspendHandler] in a [Handler]<[RoutingContext]>
- * @param requestHandler The [SuspendHandler] to wrap
+ * Wraps a [SuspendRequestHandler] in a [Handler]<[RoutingContext]>
+ * @param requestHandler The [SuspendRequestHandler] to wrap
  * @return The generated [Handler]
  * @since 1.1.0
  */
-fun wrapHandler(requestHandler: SuspendRequestHandler): Handler<RoutingContext> = Handler<RoutingContext> { ctx ->
+fun wrapRequestHandler(requestHandler: SuspendRequestHandler) = Handler<RoutingContext> { ctx ->
 	GlobalScope.launch(ctx.vertx().dispatcher()) {
 		try {
 			requestHandler.handle(ctx)
-		} catch(e: Throwable) {
+		} catch (e: Throwable) {
+			ctx.fail(e)
+		}
+	}
+}
+
+/**
+ * Wraps a [ApiRequestHandler] in a [Handler]<[RoutingContext]>
+ * @param requestHandler The [ApiRequestHandler] to wrap
+ * @return The generated [Handler]
+ * @since 1.1.2
+ */
+fun wrapApiRequestHandler(requestHandler: ApiRequestHandler) = Handler<RoutingContext> { ctx ->
+	GlobalScope.launch(ctx.vertx().dispatcher()) {
+		try {
+			ctx.send(requestHandler.handle(ctx))
+		} catch (e: Throwable) {
 			ctx.fail(e)
 		}
 	}
@@ -42,7 +58,7 @@ fun wrapHandler(requestHandler: SuspendRequestHandler): Handler<RoutingContext> 
  * @since 1.0.0
  */
 fun Route.suspendHandler(requestHandler: SuspendRequestHandler): Route {
-	handler(wrapHandler(requestHandler))
+	handler(wrapRequestHandler(requestHandler))
 	return this
 }
 
@@ -57,7 +73,7 @@ fun Route.suspendHandler(requestHandler: SuspendRequestHandler): Route {
  * @since 1.0.0
  */
 fun Router.suspendErrorHandler(statusCode: Int, errorHandler: SuspendRequestHandler): Router {
-	errorHandler(statusCode, wrapHandler(errorHandler))
+	errorHandler(statusCode, wrapRequestHandler(errorHandler))
 	return this
 }
 
