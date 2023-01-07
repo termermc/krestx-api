@@ -230,6 +230,17 @@ inline fun apiMethodNotAllowedError() = apiError(
 )
 
 /**
+ * Returns a "Bad request" error API response
+ * @return A "Bad request" error API response
+ * @since 1.1.1
+ */
+inline fun apiBadRequestError() = apiError(
+	name = "bad_request",
+	message = "Bad request",
+	statusCode = 400
+)
+
+/**
  * Returns an "Internal error" error API response
  * @return An "Internal error" error API response
  * @since 1.1.1
@@ -238,15 +249,4 @@ inline fun apiInternalError() = apiError(
 	name = "internal_error",
 	message = "Internal error",
 	statusCode = 500
-)
-
-/**
- * Returns a "Bad request" error API response
- * @return A "Bad request" error API response
- * @since 1.1.1
- */
-fun apiBadRequestError() = apiError(
-	name = "bad_request",
-	message = "Bad request",
-	statusCode = 400
 )
