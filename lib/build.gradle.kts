@@ -4,7 +4,7 @@ class Project {
     companion object {
         const val name = "krestx-api"
         const val group = "net.termer.krestx"
-        const val version = "1.1.0"
+        const val version = "1.1.1"
         const val repo = "github.com/termermc/krestx-api"
         const val description = "An opinionated Vert.x REST library built with Kotlin and coroutines. API portion."
     }
