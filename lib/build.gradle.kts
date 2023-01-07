@@ -95,6 +95,9 @@ tasks.create("kdoc") {
 tasks.javadoc {
     dependsOn("dokkaJavadoc")
 }
+tasks.publish {
+    dependsOn("test")
+}
 
 tasks.create("javadocJar", org.gradle.jvm.tasks.Jar::class) {
     dependsOn("dokkaJavadoc")
